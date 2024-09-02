@@ -1,0 +1,74 @@
+# Linear regression
+
+```elixir
+Mix.install([
+{:axon, "~> 0.6.1"},
+{:nx, "~> 0.7.0"},
+{:explorer, "~> 0.9.2"},
+{:kino, "~> 0.14.0"},
+{:scholar, "0.2.1"},
+{:vega_lite, "~> 0.1.6"},
+{:kino_vega_lite, "~> 0.1.11"}
+])
+```
+
+## Upload data
+
+```elixir
+ex1_file = Kino.Input.file("Example 1 Data")
+```
+
+The data in the file should contain two columns, the first is the population of a city, the second is the profit made from a food truck.
+
+```elixir
+# Reading and parsing the file
+
+# Read the file
+file_value = Kino.Input.read(ex1_file)
+file_path = Kino.Input.file_path(file_value.file_ref)
+{:ok, file_content} = File.read(file_path)
+
+# Split file by newline, and then each line by comma
+
+lines = String.split(file_content, "\n") |> Enum.filter(fn s -> String.length(s) > 0 end)
+
+data = Enum.map(lines, fn l -> 
+  [population, profit_per_foodtruck] = String.split(l, ",")
+  %{ "population" => population, "profit_per_foodtruck" => profit_per_foodtruck }
+  end)
+
+data
+```
+
+```elixir
+VegaLite.new(width: 700, height: 400, title: "Raw Data")
+|> VegaLite.data_from_values(data, only: ["population", "profit_per_foodtruck"])
+|> VegaLite.mark(:point)
+|> VegaLite.encode_field(:x, "population", type: :quantitative)
+|> VegaLite.encode_field(:y, "profit_per_foodtruck", type: :quantitative)
+```
+
+```elixir
+# Perform linear regression with Scholar
+
+x = Enum.map(lines, fn l -> 
+  [population_string, _] = String.split(l, ",")
+  {population, _} = Float.parse(population_string)
+  [population]
+  end)
+
+
+
+y = Enum.map(lines, fn l -> 
+  [_, profit_string] = String.split(l, ",")
+  {profit, _}  = Float.parse(profit_string)
+  [profit]
+  end)
+
+xTensor = Nx.tensor(x)
+yTensor = Nx.tensor(y)
+
+model = Scholar.Linear.LinearRegression.fit(xTensor, yTensor)
+
+model.coefficients
+```
