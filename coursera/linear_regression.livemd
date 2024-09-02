@@ -14,11 +14,11 @@ Mix.install([
 
 ## Upload data
 
+The data in the file should contain two columns, the first is the population of a city, the second is the profit made from a food truck.
+
 ```elixir
 ex1_file = Kino.Input.file("Example 1 Data")
 ```
-
-The data in the file should contain two columns, the first is the population of a city, the second is the profit made from a food truck.
 
 ```elixir
 # Reading and parsing the file
@@ -71,4 +71,29 @@ yTensor = Nx.tensor(y)
 model = Scholar.Linear.LinearRegression.fit(xTensor, yTensor)
 
 model.coefficients
+
+```
+
+```elixir
+data_with_regression = Enum.map(data, fn datum -> 
+  {populationFloat, _} = Float.parse(datum["population"])
+  %{
+  "population" => Float.parse(datum["population"]) |> elem(0),
+  "profit_per_foodtruck" => Float.parse(datum["profit_per_foodtruck"]) |> elem(0),
+  "predicted_profit_per_foodtruck" =>  populationFloat * Nx.to_number(model.coefficients[0][0]) + Nx.to_number(model.intercept[0])
+} end)
+
+VegaLite.new(width: 700, height: 400, title: "Linear Regression")
+|> VegaLite.data_from_values(data_with_regression, only: 
+  ["population", "profit_per_foodtruck", "predicted_profit_per_foodtruck"])
+|> VegaLite.layers([
+  VegaLite.new()
+  |> VegaLite.mark(:point)
+  |> VegaLite.encode_field(:x, "population", type: :quantitative)
+  |> VegaLite.encode_field(:y, "profit_per_foodtruck", type: :quantitative),
+  VegaLite.new()
+  |> VegaLite.mark(:line, color: :firebrick)
+  |> VegaLite.encode_field(:x, "population", type: :quantitative)
+  |> VegaLite.encode_field(:y, "predicted_profit_per_foodtruck", type: :quantitative)
+])
 ```
