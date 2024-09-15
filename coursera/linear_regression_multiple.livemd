@@ -1,0 +1,95 @@
+# Linear regression with multiple variables
+
+```elixir
+Mix.install([
+{:axon, "~> 0.6.1"},
+{:nx, "~> 0.7.0"},
+{:explorer, "~> 0.9.2"},
+{:kino, "~> 0.14.0"},
+{:scholar, "0.2.1"},
+{:vega_lite, "~> 0.1.6"},
+{:kino_vega_lite, "~> 0.1.11"}
+])
+```
+
+## Upload data
+
+The file ex1data2.txt contains a training set of housing prices in Portland, Oregon. The first column is the size of the house (in square feet), the
+second column is the number of bedrooms, and the third column is the price
+of the house.
+
+```elixir
+ex2_file = Kino.Input.file("Example 2 Data")
+```
+
+```elixir
+# Reading and parsing the file
+
+# Read the file
+file_value = Kino.Input.read(ex2_file)
+file_path = Kino.Input.file_path(file_value.file_ref)
+{:ok, file_content} = File.read(file_path)
+
+# Split file by newline, and then each line by comma
+
+lines = String.split(file_content, "\n") |> Enum.filter(fn s -> String.length(s) > 0 end)
+
+data = Enum.map(lines, fn l -> 
+  [size, rooms, price] = String.split(l, ",")
+  %{ "size" => size |> Integer.parse |> elem(0), "rooms" => rooms |> Integer.parse |> elem(0), "price" => price |> Integer.parse |> elem(0)}
+  end)
+
+data
+```
+
+```elixir
+VegaLite.new(width: 700, height: 400, title: "Raw Data")
+|> VegaLite.data_from_values(data, only: ["price", "rooms", "size"])
+|> VegaLite.mark(:point)
+|> VegaLite.encode_field(:x, "size", type: :quantitative)
+|> VegaLite.encode_field(:y, "price", type: :quantitative)
+```
+
+```elixir
+# Convert to tensors
+
+x = Enum.map(data, fn datum -> 
+  [datum["rooms"], datum["size"]]
+  end) |> Nx.tensor()
+
+y = Enum.map(data, fn datum -> 
+  datum["price"]
+  end) |> Nx.tensor()
+
+# Normalize tensors
+
+# x = Scholar.Preprocessing.standard_scale(x)
+# y = Scholar.Preprocessing.standard_scale(y)
+```
+
+```elixir
+# Perform linear regression with Scholar
+
+model = Scholar.Linear.LinearRegression.fit(x, y)
+
+model
+
+```
+
+```elixir
+# Test prediction
+test = data |> Enum.take(4) |> Enum.map(fn datum -> 
+  [datum["rooms"], datum["size"]]
+  end) |> Nx.tensor()
+
+# test = Nx.tensor([[3, 1650]])
+
+actual_results = data |> Enum.take(4) |> Enum.map(fn datum -> 
+  datum["price"]
+  end) |> Nx.tensor()
+
+ 
+Scholar.Linear.LinearRegression.predict(model, test)
+
+# actual_results
+```

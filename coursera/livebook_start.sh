@@ -1,1 +1,1 @@
-docker run -p 8080:8080 -v $(pwd):/data ghcr.io/livebook-dev/livebook -p 8081:8081 --pull always -e LIVEBOOK_PASSWORD="letmein" ghcr.io/livebook-dev/livebook
+docker run -p 8080:8080 -p 8081:8081 --pull always -u $(id -u):$(id -g) -v $(pwd):/data -e LIVEBOOK_PASSWORD="letmein12341234" ghcr.io/livebook-dev/livebook
